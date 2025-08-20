@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hire a Dev On Roblox</title>
+<style>
+body { margin:0; font-family:Arial,sans-serif; background:#0d1117; color:#fff; display:flex; min-height:100vh; }
+.sidebar { width:340px; background:#1a1f2b; padding:25px; border-right:2px solid #2a2f3f; display:flex; flex-direction:column; }
+.sidebar h2 { color:#00a2ff; margin-bottom:25px; }
+.sidebar label { margin:14px 0; display:flex; align-items:center; }
+.sidebar input { margin-left:12px; }
+.sidebar p { font-size:12px; color:#888; margin-top:30px; }
+.main-content { flex:1; padding:40px; display:flex; flex-direction:column; align-items:center; overflow-y:auto; }
+.step-container { background:#1a1f2b; border:2px solid #2a2f3f; border-radius:16px; padding:50px; max-width:1000px; text-align:left; box-shadow:0 0 50px rgba(0,0,0,0.85); margin-bottom:30px; }
+.btn { background:linear-gradient(90deg,#00a2ff,#1282ff); border:none; padding:16px 32px; border-radius:12px; cursor:pointer; font-size:18px; color:#fff; transition:0.3s; margin:14px 0; }
+.btn:hover{background:#007acc;}
+canvas { border:1px solid #2a2f3f; border-radius:14px; margin-top:25px; }
+h1,h2,h3 { color:#00a2ff; }
+p,li { line-height:1.9; margin-bottom:18px; }
+ul { margin-left:30px; }
+ol { margin-left:30px; }
+.dashboard { width:100%; margin-top:30px; border-top:2px solid #2a2f3f; padding-top:20px; }
+.developer-card { background:#2a2f3f; border-radius:12px; padding:16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; }
+.developer-card img { width:60px; height:60px; border-radius:8px; margin-right:15px; }
+.developer-info { flex:1; }
+.developer-actions button { background:#ff5555; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; color:#fff; transition:0.3s; margin-left:8px; }
+.developer-actions button:hover { background:#cc0000; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+<h2>Settings Panel</h2>
+<label>Idle Animation <input type="checkbox" id="idleToggle" checked></label>
+<label>Show Username <input type="checkbox" id="nameToggle" checked></label>
+<label>Show Avatar <input type="checkbox" id="avatarToggle" checked></label>
+<label>Show Game Pass Price <input type="checkbox" id="priceToggle" checked></label>
+<label>Enable Notifications <input type="checkbox" id="notifyToggle" checked></label>
+<label>Auto-Update Developers <input type="checkbox" id="autoUpdateToggle" checked></label>
+<label>Display Dashboard Stats <input type="checkbox" id="statsToggle" checked></label>
+<label>Enable 3D Effects <input type="checkbox" id="effectsToggle" checked></label>
+<button class="btn" onclick="refreshAvatar()">Refresh Avatar</button>
+<p>© 2025 Hire a Dev On Roblox. All rights reserved. Only official Roblox accounts.</p>
+</div>
+
+<div class="main-content">
+
+<div class="step-container" id="step1">
+<h1>Step 1: Terms of Service</h1>
+<p>Welcome to <strong>Hire a Dev On Roblox</strong>. Accept the ToS to access all features:</p>
+<ul>
+<li>Submit only valid Roblox profiles and official Game Pass links.</li>
+<li>Respect Roblox rules, developers, and users.</li>
+<li>Never copy, clone, or redistribute this site.</li>
+<li>No scams, phishing, or unsafe content.</li>
+<li>All Robux transactions occur through Roblox securely.</li>
+<li>Use all features responsibly and ethically.</li>
+<li>Live 3D avatars, dashboard, and developer info updates are provided safely.</li>
+<li>Misuse may result in account suspension or blocking from the site.</li>
+</ul>
+<button class="btn" onclick="acceptToS()">I Accept ToS</button>
+</div>
+
+<div class="step-container" id="step2" style="display:none;">
+<h1>Step 2: Connect Roblox Account</h1>
+<p>Connect to unlock all features:</p>
+<ul>
+<li>Live 3D avatar with optional idle animation.</li>
+<li>Display your username and @username on profile.</li>
+<li>List yourself as hireable.</li>
+<li>Submit Game Passes for Robux earnings.</li>
+<li>Hire developers and manage dashboard securely.</li>
+<li>Receive notifications for developer updates.</li>
+<li>Auto-update developers every 30 seconds.</li>
+<li>Toggle all settings via sidebar.</li>
+</ul>
+<button class="btn" onclick="connectRoblox()">Connect My Roblox Account</button>
+<button class="btn" onclick="skipConnect()">Skip (View Only)</button>
+</div>
+
+<div class="step-container" id="confirmationBox" style="display:none; text-align:center;">
+<h1>✅ Account Connected!</h1>
+<p id="userDisplay">Welcome, <span id="displayName">[DisplayName]</span> (<span id="username">@username</span>)</p>
+<canvas id="avatarCanvas" width="400" height="400"></canvas>
+<p>All features are now enabled. Use sidebar to adjust settings, toggle idle animation, and manage developers.</p>
+
+<h3>Dashboard (Developers)</h3>
+<div class="dashboard" id="dashboard">
+<!-- Developers will be loaded based on user input -->
+</div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+<script>
+let scene, camera, renderer, avatarModel;
+let idleOn = true;
+const canvas = document.getElementById('avatarCanvas');
+
+function init3DAvatar(){
+scene = new THREE.Scene();
+camera = new THREE.PerspectiveCamera(45,1,0.1,1000);
+camera.position.z = 5;
+renderer = new THREE.WebGLRenderer({canvas:canvas, alpha:true});
+renderer.setSize(400,400);
+const light = new THREE.DirectionalLight(0xffffff,1);
+light.position.set(5,5,5);
+scene.add(light);
+const geometry = new THREE.BoxGeometry(1,2,1);
+const material = new THREE.MeshStandardMaterial({color:0x00a2ff});
+avatarModel = new THREE.Mesh(geometry,material);
+scene.add(avatarModel);
+animate();
+}
+
+function animate(){
+requestAnimationFrame(animate);
+if(idleOn) avatarModel.rotation.y += 0.01;
+renderer.render(scene,camera);
+}
+
+function refreshAvatar(){ console.log('Avatar refreshed'); }
+
+function acceptToS(){
+localStorage.setItem('acceptedToS','true');
+document.getElementById('step1').style.display='none';
+document.getElementById('step2').style.display='block';
+}
+
+function connectRoblox(){
+document.getElementById('step2').style.display='none';
+document.getElementById('confirmationBox').style.display='block';
+document.getElementById('displayName').innerText='YourDisplayName';
+document.getElementById('username').innerText='YourUsername';
+init3DAvatar();
+}
+
+function skipConnect(){
+document.getElementById('step2').style.display='none';
+document.getElementById('confirmationBox').style.display='block';
+document.getElementById('displayName').innerText='Guest';
+document.getElementById('username').innerText='Guest';
+init3DAvatar();
+}
+
+// Sidebar toggles
+document.getElementById('idleToggle').addEventListener('change', e=>{idleOn=e.target.checked;});
+document.getElementById('nameToggle').addEventListener('change', e=>{document.getElementById('userDisplay').style.display=e.target.checked?'block':'none';});
+document.getElementById('avatarToggle').addEventListener('change', e=>{canvas.style.display=e.target.checked?'block':'none';});
+
+// Auto-update simulation (replace with real Roblox fetch)
+setInterval(()=>{ console.log('Fetch live Roblox developers here every 30s'); },30000);
+
+if(localStorage.getItem('acceptedToS')==='true'){
+document.getElementById('step1').style.display='none';
+document.getElementById('step2').style.display='block';
+}
+</script>
+</body>
+</html>
