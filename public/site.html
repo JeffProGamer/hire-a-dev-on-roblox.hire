@@ -24,23 +24,23 @@
       const [developers, setDevelopers] = useState([]);
       const [projectStats, setProjectStats] = useState({ active: 0, completed: 0, pending: 0 });
 
-      // Fetch user profile
+      // Fetch data
       useEffect(() => {
         axios.get('/api/me')
           .then(res => setUser(res.data))
           .catch(err => console.error('Error fetching user:', err));
 
-        // Fetch hired developers (mocked for now, replace with real API)
         axios.get('/api/developers')
           .then(res => setDevelopers(res.data))
           .catch(err => console.error('Error fetching developers:', err));
 
-        // Fetch project stats
         axios.get('/api/projects/stats')
-          .then(res => setProjectStats(res.data))
+          .then(res => {
+            setProjectStats(res.data);
+            renderChart(res.data);
+          })
           .catch(err => console.error('Error fetching stats:', err));
 
-        // Fetch notifications (mocked for now)
         axios.get('/api/notifications')
           .then(res => setNotifications(res.data))
           .catch(err => console.error('Error fetching notifications:', err));
@@ -196,9 +196,6 @@
         });
       }
     };
-
-    // Update chart when stats change
-    axios.get('/api/projects/stats').then(res => renderChart(res.data));
   </script>
 </body>
 </html>
