@@ -3,180 +3,202 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hire a Dev On Roblox</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #1e1e2f, #2a2a40);
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .card {
-      background: #2e2e4d;
-      padding: 2rem;
-      border-radius: 1.5rem;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-      width: 400px;
-      text-align: center;
-      animation: fadeIn 1s ease-in-out;
-    }
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
-    }
-    button {
-      background: linear-gradient(135deg, #ff4757, #ff6b81);
-      border: none;
-      color: white;
-      font-size: 1.1rem;
-      font-weight: bold;
-      padding: 0.75rem 1.5rem;
-      border-radius: 9999px;
-      cursor: pointer;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 5px 15px rgba(255,71,87,0.4);
-    }
-    button:active {
-      transform: scale(0.95);
-    }
-    .toggle {
-      margin-top: 1.5rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 55px;
-      height: 28px;
-    }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #555;
-      transition: .4s;
-      border-radius: 34px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 20px;
-      width: 20px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: #ff4757;
-    }
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .profile {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      border-radius: 1rem;
-      background: rgba(255,255,255,0.05);
-      display: none;
-      animation: fadeIn 0.5s ease-in-out;
-    }
-    .profile img {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      margin-bottom: 0.5rem;
-    }
-    .profile h2 {
-      margin: 0.25rem 0;
-      font-size: 1.2rem;
-    }
-  </style>
+  <title>Roblox DevHub Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.21.4/babel.min.js"></script>
 </head>
 <body>
-  <div class="card">
-    <h1>Hire a Dev On Roblox</h1>
-    <button id="loginBtn">Connect with Roblox</button>
-    <div class="toggle">
-      <span>Dark Mode</span>
-      <label class="switch">
-        <input type="checkbox" id="themeToggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="profile" id="profileBox">
-      <img id="avatar" src="" alt="Avatar">
-      <h2 id="displayName"></h2>
-      <p id="username"></p>
-      <button onclick="window.location.href='/api/logout'">Logout</button>
-    </div>
-  </div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-  <script>
-    const loginBtn = document.getElementById("loginBtn");
-    const profileBox = document.getElementById("profileBox");
-    const avatar = document.getElementById("avatar");
-    const displayName = document.getElementById("displayName");
-    const username = document.getElementById("username");
-    const themeToggle = document.getElementById("themeToggle");
+    const App = () => {
+      const [user, setUser] = useState(null);
+      const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [notifications, setNotifications] = useState([]);
+      const [developers, setDevelopers] = useState([]);
+      const [projectStats, setProjectStats] = useState({ active: 0, completed: 0, pending: 0 });
 
-    // Kick off Roblox OAuth flow
-    loginBtn.addEventListener("click", () => {
-      window.location.href = "/api/oauth/roblox";
-    });
+      // Fetch user profile
+      useEffect(() => {
+        axios.get('/api/me')
+          .then(res => setUser(res.data))
+          .catch(err => console.error('Error fetching user:', err));
 
-    // Load user profile from session
-    async function loadProfile() {
-      try {
-        const res = await fetch("/api/me");
-        if (!res.ok) return;
-        const data = await res.json();
-        avatar.src = data.avatar;
-        displayName.innerText = data.displayName;
-        username.innerText = "@" + data.username;
-        profileBox.style.display = "block";
-        loginBtn.style.display = "none";
-      } catch (err) {
-        console.error(err);
+        // Fetch hired developers (mocked for now, replace with real API)
+        axios.get('/api/developers')
+          .then(res => setDevelopers(res.data))
+          .catch(err => console.error('Error fetching developers:', err));
+
+        // Fetch project stats
+        axios.get('/api/projects/stats')
+          .then(res => setProjectStats(res.data))
+          .catch(err => console.error('Error fetching stats:', err));
+
+        // Fetch notifications (mocked for now)
+        axios.get('/api/notifications')
+          .then(res => setNotifications(res.data))
+          .catch(err => console.error('Error fetching notifications:', err));
+      }, []);
+
+      // Logout handler
+      const handleLogout = () => {
+        axios.get('/api/logout')
+          .then(() => window.location.href = '/')
+          .catch(err => console.error('Error logging out:', err));
+      };
+
+      // Render login page if not authenticated
+      if (!user) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-900">
+            <div className="bg-gray-800 p-8 rounded-2xl shadow-xl text-center animate-fadeIn">
+              <h1 className="text-3xl font-bold text-white mb-4">Roblox DevHub</h1>
+              <p className="text-gray-300 mb-6">Connect your Roblox account to access the developer dashboard.</p>
+              <button
+                onClick={() => window.location.href = '/api/oauth/roblox'}
+                className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:scale-105 transition-transform shadow-lg"
+              >
+                Connect with Roblox
+              </button>
+            </div>
+          </div>
+        );
       }
-    }
 
-    // Always check on page load
-    loadProfile();
+      // Render dashboard
+      return (
+        <div className="min-h-screen bg-gray-900">
+          {/* Sidebar */}
+          <div className={`fixed inset-y-0 left-0 w-64 bg-gray-800 shadow-2xl transform ${sidebarOpen ? '' : '-translate-x-full'} lg:transform-none transition-transform duration-300`}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="text-xl font-bold text-white">DevHub</h2>
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <nav className="mt-4">
+              <a href="#" className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
+              <a href="#" className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Hired Devs</a>
+              <a href="#" className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Messages</a>
+              <a href="#" className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Settings</a>
+            </nav>
+          </div>
 
-    // Dark mode toggle
-    themeToggle.addEventListener("change", () => {
-      if (themeToggle.checked) {
-        document.body.style.background = "linear-gradient(135deg, #000, #111)";
-      } else {
-        document.body.style.background = "linear-gradient(135deg, #1e1e2f, #2a2a40)";
+          {/* Main Content */}
+          <div className="lg:ml-64 p-6">
+            <header className="flex justify-between items-center mb-8">
+              <div className="flex items-center space-x-4">
+                <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+                <h1 className="text-3xl font-bold text-white">Roblox DevHub Dashboard</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <button className="text-gray-300 hover:text-white">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-12 0v3.159c0 .538-.214 1.052-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                  </button>
+                  <div className="absolute right-0 mt-2 w-64 p-4 bg-emerald-500 rounded-lg hidden">
+                    {notifications.map((notif, index) => (
+                      <p key={index} className="text-sm text-white">{notif.message}</p>
+                    ))}
+                  </div>
+                </div>
+                <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-red-500" />
+                <span className="text-sm font-semibold text-white">{user.displayName}</span>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-semibold hover:scale-105 transition-transform"
+                >
+                  Logout
+                </button>
+              </div>
+            </header>
+
+            {/* Dashboard Content */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Hired Developers */}
+              <div className="bg-gray-800 p-6 rounded-xl shadow-xl hover:-translate-y-1 transition-transform">
+                <h2 className="text-xl font-semibold text-white mb-4">Hired Developers</h2>
+                <div className="space-y-4">
+                  {developers.map(dev => (
+                    <div key={dev.id} className="p-4 bg-gray-700 rounded-lg flex items-center space-x-4 hover:bg-red-900/20 transition-colors">
+                      <img src={dev.avatar} alt="Dev Avatar" className="w-10 h-10 rounded-full" />
+                      <div>
+                        <h3 className="text-lg font-medium text-white">{dev.displayName}</h3>
+                        <p className="text-sm text-gray-400">{dev.role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="mt-4 w-full bg-gradient-to-r from-red-500 to-pink-500 text-white py-2 rounded-full font-semibold hover:scale-105 transition-transform">
+                  Hire More
+                </button>
+              </div>
+
+              {/* Project Stats */}
+              <div className="bg-gray-800 p-6 rounded-xl shadow-xl hover:-translate-y-1 transition-transform">
+                <h2 className="text-xl font-semibold text-white mb-4">Project Stats</h2>
+                <p className="text-sm text-gray-300">Active Projects: <span className="font-bold">{projectStats.active}</span></p>
+                <p className="text-sm text-gray-300">Completed Tasks: <span className="font-bold">{projectStats.completed}</span></p>
+                <p className="text-sm text-gray-300">Pending Reviews: <span className="font-bold">{projectStats.pending}</span></p>
+                <canvas id="projectChart" className="mt-4"></canvas>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="bg-gray-800 p-6 rounded-xl shadow-xl hover:-translate-y-1 transition-transform">
+                <h2 className="text-xl font-semibold text-white mb-4">Recent Activity</h2>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  {notifications.map((notif, index) => (
+                    <li key={index}>{notif.message}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // Render App
+    ReactDOM.render(<App />, document.getElementById('root'));
+
+    // Chart.js for project stats
+    const renderChart = (stats) => {
+      const ctx = document.getElementById('projectChart')?.getContext('2d');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Active', 'Completed', 'Pending'],
+            datasets: [{
+              data: [stats.active, stats.completed, stats.pending],
+              backgroundColor: ['#ff4757', '#10b981', '#3b82f6'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
       }
-    });
+    };
+
+    // Update chart when stats change
+    axios.get('/api/projects/stats').then(res => renderChart(res.data));
   </script>
 </body>
 </html>
