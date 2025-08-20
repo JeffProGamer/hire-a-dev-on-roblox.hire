@@ -1,115 +1,182 @@
-<!-- site.html (calls /api/oauth/roblox and reads /api/me) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hire a Dev On Roblox</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    :root { --bg: #0b1220; --card:#121a2b; --accent:#2ea0ff; --accent2:#7ed957; --text:#e9f1ff; --muted:#9db0cf; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:radial-gradient(1200px 800px at 80% -10%,#16315a 0%,transparent 60%),linear-gradient(180deg,#0a0f1a,#05070d);color:var(--text);min-height:100vh;display:grid;place-items:center;padding:24px}
-    .shell{width:min(980px,100%);display:grid;gap:20px}
-    header{display:flex;justify-content:space-between;align-items:center}
-    .logo{font-weight:800;font-size:22px;letter-spacing:.5px}
-    .card{background:var(--card);border:1px solid #1e2a44;border-radius:24px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.4);backdrop-filter: blur(6px);animation:pop .5s ease}
-    @keyframes pop{from{transform:translateY(10px);opacity:.0}to{transform:translateY(0);opacity:1}}
-    .row{display:flex;gap:16px;flex-wrap:wrap}
-    .btn{appearance:none;border:0;border-radius:14px;padding:14px 18px;font-weight:700;color:#06111f;background:linear-gradient(135deg,var(--accent),#1670ff);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
-    .btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(46,160,255,.35)}
-    .btn.ghost{background:#101b2f;color:var(--text);border:1px solid #223355}
-    .pill{display:inline-flex;gap:8px;align-items:center;background:#0c1426;border:1px solid #1f2c47;color:var(--muted);padding:8px 12px;border-radius:999px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-    .profile{display:flex;gap:16px;align-items:center}
-    .profile img{width:84px;height:84px;border-radius:18px;border:1px solid #223355;box-shadow:0 6px 18px rgba(0,0,0,.45);opacity:0;transform:translateY(6px);transition:all .25s ease}
-    .profile.ready img{opacity:1;transform:translateY(0)}
-    .title{font-size:20px;font-weight:800;margin:0 0 6px}
-    .muted{color:var(--muted)}
-    .switch{position:relative;width:56px;height:30px}
-    .switch input{display:none}
-    .track{position:absolute;inset:0;background:#0e1729;border:1px solid #223355;border-radius:999px;transition:background .25s}
-    .thumb{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:linear-gradient(180deg,#eaf3ff,#c6d9ff);box-shadow:0 6px 14px rgba(0,0,0,.35);transition:transform .25s cubic-bezier(.2,.6,.3,1)}
-    input:checked + .track{background:linear-gradient(135deg,var(--accent2),#2bd671)}
-    input:checked + .track .thumb{transform:translateX(26px)}
-    footer{opacity:.7;text-align:center;font-size:12px}
-    @media (max-width:860px){.grid{grid-template-columns:1fr}}
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .card {
+      background: #2e2e4d;
+      padding: 2rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      width: 400px;
+      text-align: center;
+      animation: fadeIn 1s ease-in-out;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: linear-gradient(135deg, #ff4757, #ff6b81);
+      border: none;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: bold;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(255,71,87,0.4);
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    .toggle {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 55px;
+      height: 28px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #555;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #ff4757;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .profile {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 1rem;
+      background: rgba(255,255,255,0.05);
+      display: none;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    .profile img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin-bottom: 0.5rem;
+    }
+    .profile h2 {
+      margin: 0.25rem 0;
+      font-size: 1.2rem;
+    }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <header>
-      <div class="logo">Hire a Dev On Roblox</div>
-      <div class="row">
-        <button id="connect" class="btn">Connect with Roblox</button>
-        <button id="logout" class="btn ghost">Logout</button>
-      </div>
-    </header>
-
-    <section class="grid">
-      <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div class="pill">Status: <span id="status">Signed out</span></div>
-          <label class="switch">
-            <input id="uiToggle" type="checkbox" />
-            <span class="track"><span class="thumb"></span></span>
-          </label>
-        </div>
-        <div class="profile" id="profile">
-          <img id="avatar" alt="avatar" src="">
-          <div>
-            <h3 class="title" id="displayName">—</h3>
-            <div class="muted" id="username">—</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3 class="title" style="margin-bottom:12px">How it works</h3>
-        <ol class="muted" style="line-height:1.9;margin:0;padding-left:18px">
-          <li>Click <b>Connect with Roblox</b> to go to roblox.com</li>
-          <li>Sign in and approve the app</li>
-          <li>You’ll come back here and your profile loads</li>
-        </ol>
-      </div>
-    </section>
-
-    <footer>© 2025 Hire a Dev On Roblox</footer>
+  <div class="card">
+    <h1>Hire a Dev On Roblox</h1>
+    <button id="loginBtn">Connect with Roblox</button>
+    <div class="toggle">
+      <span>Dark Mode</span>
+      <label class="switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="profile" id="profileBox">
+      <img id="avatar" src="" alt="Avatar">
+      <h2 id="displayName"></h2>
+      <p id="username"></p>
+      <button onclick="window.location.href='/api/logout'">Logout</button>
+    </div>
   </div>
 
   <script>
-    const $ = (s) => document.querySelector(s);
-    const statusEl = $("#status");
-    const profileEl = $("#profile");
-    const avatarEl = $("#avatar");
-    const displayEl = $("#displayName");
-    const userEl = $("#username");
+    const loginBtn = document.getElementById("loginBtn");
+    const profileBox = document.getElementById("profileBox");
+    const avatar = document.getElementById("avatar");
+    const displayName = document.getElementById("displayName");
+    const username = document.getElementById("username");
+    const themeToggle = document.getElementById("themeToggle");
 
-    $("#connect").onclick = () => (window.location.href = "/api/oauth/roblox");
-    $("#logout").onclick = () => (window.location.href = "/api/logout");
-    $("#uiToggle").onchange = (e) => {
-      document.documentElement.style.setProperty(
-        "--accent",
-        e.target.checked ? "#7ed957" : "#2ea0ff"
-      );
-    };
+    // Kick off Roblox OAuth flow
+    loginBtn.addEventListener("click", () => {
+      window.location.href = "/api/oauth/roblox";
+    });
 
-    async function loadMe() {
+    // Load user profile from session
+    async function loadProfile() {
       try {
-        const res = await fetch("/api/me", { credentials: "include" });
-        if (!res.ok) throw 0;
-        const me = await res.json();
-        statusEl.textContent = "Connected";
-        displayEl.textContent = me.displayName || "—";
-        userEl.textContent = me.username ? "@" + me.username : "—";
-        if (me.avatar) avatarEl.src = me.avatar;
-        profileEl.classList.add("ready");
-      } catch {
-        statusEl.textContent = "Signed out";
+        const res = await fetch("/api/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        avatar.src = data.avatar;
+        displayName.innerText = data.displayName;
+        username.innerText = "@" + data.username;
+        profileBox.style.display = "block";
+        loginBtn.style.display = "none";
+      } catch (err) {
+        console.error(err);
       }
     }
-    loadMe();
+
+    // Always check on page load
+    loadProfile();
+
+    // Dark mode toggle
+    themeToggle.addEventListener("change", () => {
+      if (themeToggle.checked) {
+        document.body.style.background = "linear-gradient(135deg, #000, #111)";
+      } else {
+        document.body.style.background = "linear-gradient(135deg, #1e1e2f, #2a2a40)";
+      }
+    });
   </script>
 </body>
 </html>
