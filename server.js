@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
@@ -9,7 +10,7 @@ require('dotenv').config();
 
 const app = express();
 
-// Configure axios-retry for Roblox API rate limits
+// Retry config for Roblox API
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 // Middleware
@@ -29,20 +30,25 @@ passport.use(new OAuth2Strategy({
   tokenURL: 'https://auth.roblox.com/v2/token',
   clientID: process.env.ROBLOX_CLIENT_ID,
   clientSecret: process.env.ROBLOX_CLIENT_SECRET,
-  callbackURL: process.env.CALLBACK_URL || 'https://mc-6vj2.onrender.com/api/oauth/callback',
+  callbackURL: process.env.CALLBACK_URL || 'http://localhost:3000/api/oauth/callback',
   scope: ['user.identity']
 }, async (accessToken, refreshToken, profile, done) => {
   try {
+    // Fetch authenticated user info
     const userResponse = await axios.get('https://users.roblox.com/v1/users/authenticated', {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
+
     const userData = userResponse.data;
+
     const userProfile = {
       id: userData.id,
       username: userData.name,
       displayName: userData.displayName,
-      avatar: `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userData.id}&size=150x150&format=Png`
+      avatar: `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userData.id}&size=150x150&format=Png`,
+      accessToken // save token for later API calls (like group info)
     };
+
     return done(null, userProfile);
   } catch (err) {
     console.error('Error fetching user profile:', err.message);
@@ -53,7 +59,7 @@ passport.use(new OAuth2Strategy({
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// Routes
+// OAuth routes
 app.get('/api/oauth/roblox', passport.authenticate('oauth2'));
 app.get('/api/oauth/callback', passport.authenticate('oauth2', {
   failureRedirect: '/'
@@ -61,23 +67,29 @@ app.get('/api/oauth/callback', passport.authenticate('oauth2', {
   res.redirect('/');
 });
 
+// Fetch logged-in user
 app.get('/api/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not logged in' });
+
   res.json({
+    id: req.user.id,
     username: req.user.username,
     displayName: req.user.displayName,
-    avatar: req.user.avatar,
-    id: req.user.id
+    avatar: req.user.avatar
   });
 });
 
+
+// Logout
 app.get('/api/logout', (req, res) => {
   req.logout(() => {
     res.redirect('/');
   });
 });
 
+// Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
