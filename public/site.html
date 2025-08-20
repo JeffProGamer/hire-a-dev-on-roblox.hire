@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hire a Dev On Roblox</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .card {
+      background: #2e2e4d;
+      padding: 2rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      width: 400px;
+      text-align: center;
+      animation: fadeIn 1s ease-in-out;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: linear-gradient(135deg, #ff4757, #ff6b81);
+      border: none;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: bold;
+      padding: 0.75rem 1.5rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(255,71,87,0.4);
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    .toggle {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 55px;
+      height: 28px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #555;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #ff4757;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .profile {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 1rem;
+      background: rgba(255,255,255,0.05);
+      display: none;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    .profile img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin-bottom: 0.5rem;
+    }
+    .profile h2 {
+      margin: 0.25rem 0;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hire a Dev On Roblox</h1>
+    <button id="loginBtn">Connect with Roblox</button>
+    <div class="toggle">
+      <span>Dark Mode</span>
+      <label class="switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="profile" id="profileBox">
+      <img id="avatar" src="" alt="Avatar">
+      <h2 id="displayName"></h2>
+      <p id="username"></p>
+      <button onclick="window.location.href='/api/logout'">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const loginBtn = document.getElementById("loginBtn");
+    const profileBox = document.getElementById("profileBox");
+    const avatar = document.getElementById("avatar");
+    const displayName = document.getElementById("displayName");
+    const username = document.getElementById("username");
+    const themeToggle = document.getElementById("themeToggle");
+
+    // Kick off Roblox OAuth flow
+    loginBtn.addEventListener("click", () => {
+      window.location.href = "/api/oauth/roblox";
+    });
+
+    // Load user profile from session
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        avatar.src = data.avatar;
+        displayName.innerText = data.displayName;
+        username.innerText = "@" + data.username;
+        profileBox.style.display = "block";
+        loginBtn.style.display = "none";
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Always check on page load
+    loadProfile();
+
+    // Dark mode toggle
+    themeToggle.addEventListener("change", () => {
+      if (themeToggle.checked) {
+        document.body.style.background = "linear-gradient(135deg, #000, #111)";
+      } else {
+        document.body.style.background = "linear-gradient(135deg, #1e1e2f, #2a2a40)";
+      }
+    });
+  </script>
+</body>
+</html>
