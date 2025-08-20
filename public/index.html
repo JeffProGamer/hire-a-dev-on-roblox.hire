@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Roblox DevHub Dashboard</title>
+  <title>Roblox Hub</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
@@ -11,55 +11,48 @@
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.21.4/babel.min.js"></script>
   <style>
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fadeIn {
-      animation: fadeIn 0.5s ease-in-out;
-    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+    .animate-fadeIn { animation: fadeIn 0.5s ease-in-out; }
   </style>
 </head>
-<body>
+<body class="bg-gray-900">
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useEffect } = React;
 
     const App = () => {
       const [user, setUser] = useState(null);
-      const [groupOwner, setGroupOwner] = useState(null);
-      const [sidebarOpen, setSidebarOpen] = useState(false);
-      const [error, setError] = useState(null);
+      const [friends, setFriends] = useState([]);
+      const [badges, setBadges] = useState([]);
+      const [showSettings, setShowSettings] = useState(false);
+      const [showAvatarIdle, setShowAvatarIdle] = useState(true);
+      const [gamePassLink, setGamePassLink] = useState("https://www.roblox.com/game-pass/123456789");
 
-      // Fetch data
       useEffect(() => {
         axios.get('/api/me')
-          .then(res => setUser(res.data))
-          .catch(err => console.error('Error fetching user:', err.message));
-
-        axios.get('/api/group/owner')
-          .then(res => setGroupOwner(res.data))
-          .catch(err => setError(err.response?.data?.error || 'Failed to load group owner'));
+          .then(res => {
+            setUser(res.data);
+            axios.get(`https://friends.roblox.com/v1/users/${res.data.id}/friends`)
+              .then(r => setFriends(r.data.data.slice(0, 6)))
+              .catch(() => {});
+            axios.get(`https://badges.roblox.com/v1/users/${res.data.id}/badges?limit=6`)
+              .then(r => setBadges(r.data.data))
+              .catch(() => {});
+          })
+          .catch(() => console.log('Not logged in'));
       }, []);
 
-      // Logout handler
       const handleLogout = () => {
-        axios.get('/api/logout')
-          .then(() => window.location.href = '/')
-          .catch(err => console.error('Error logging out:', err.message));
+        axios.get('/api/logout').then(() => window.location.href = '/');
       };
 
-      // Render login page if not authenticated
       if (!user) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-900">
             <div className="bg-gray-800 p-8 rounded-2xl shadow-xl text-center animate-fadeIn">
-              <h1 className="text-3xl font-bold text-white mb-4">Roblox DevHub</h1>
-              <p className="text-gray-300 mb-6">Connect your Roblox account to view group ownership.</p>
-              <button
-                onClick={() => window.location.href = '/api/oauth/roblox'}
-                className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:scale-105 transition-transform shadow-lg"
-              >
+              <h1 className="text-3xl font-bold text-white mb-4">Roblox Hub</h1>
+              <p className="text-gray-300 mb-6">Connect your Roblox account.</p>
+              <button onClick={() => window.location.href = '/api/oauth/roblox'} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:scale-105 transition-transform shadow-lg">
                 Connect with Roblox
               </button>
             </div>
@@ -67,76 +60,91 @@
         );
       }
 
-      // Render dashboard
       return (
-        <div className="min-h-screen bg-gray-900">
-          {/* Sidebar */}
-          <div className={`fixed inset-y-0 left-0 w-64 bg-gray-800 shadow-2xl transform ${sidebarOpen ? '' : '-translate-x-full'} lg:transform-none transition-transform duration-300`}>
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h2 className="text-xl font-bold text-white">DevHub</h2>
-              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+        <div className="min-h-screen text-white">
+          {/* Header */}
+          <header className="flex justify-between items-center p-6 bg-gray-800 shadow-lg">
+            <h1 className="text-2xl font-bold">Roblox Hub</h1>
+            <div className="flex items-center space-x-4">
+              <button onClick={() => setShowSettings(!showSettings)} className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500 transition">⚙️ Settings</button>
+              <img src={user.avatar} className="w-10 h-10 rounded-full border-2 border-red-500" />
+              <span className="font-semibold">{user.displayName}</span>
+              <button onClick={handleLogout} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-semibold hover:scale-105 transition-transform">Logout</button>
             </div>
-            <nav className="mt-4">
-              <a href="#" className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Dashboard</a>
-              <a href="#" className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Group Info</a>
-              <a href="#" className="block px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white">Settings</a>
-            </nav>
-          </div>
+          </header>
 
-          {/* Main Content */}
-          <div className="lg:ml-64 p-6">
-            <header className="flex justify-between items-center mb-8">
-              <div className="flex items-center space-x-4">
-                <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-white">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-                <h1 className="text-3xl font-bold text-white">Roblox DevHub Dashboard</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-red-500" />
-                <span className="text-sm font-semibold text-white">{user.displayName}</span>
-                <button
-                  onClick={handleLogout}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-semibold hover:scale-105 transition-transform"
-                >
-                  Logout
-                </button>
-              </div>
-            </header>
+          {/* Discovery buttons */}
+<div className="mt-6 space-y-4">
+  <a href={gamePassLink} target="_blank" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition">Hire Player</a>
+  <a href={`https://www.roblox.com/users/${user.id}/profile`} target="_blank" className="block bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-500 transition">View Player Profile (Roblox)</a>
+</div>
 
-            {/* Dashboard Content */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Group Owner */}
-              <div className="bg-gray-800 p-6 rounded-xl shadow-xl hover:-translate-y-1 transition-transform">
-                <h2 className="text-xl font-semibold text-white mb-4">Group Owner</h2>
-                {error ? (
-                  <p className="text-red-400">{error}</p>
-                ) : groupOwner ? (
-                  <div className="p-4 bg-gray-700 rounded-lg flex items-center space-x-4 hover:bg-red-900/20 transition-colors">
-                    <img src={groupOwner.avatar} alt="Owner Avatar" className="w-10 h-10 rounded-full" />
-                    <div>
-                      <h3 className="text-lg font-medium text-white">{groupOwner.displayName}</h3>
-                      <p className="text-sm text-gray-400">Username: {groupOwner.username}</p>
-                      <p className="text-sm text-gray-400">User ID: {groupOwner.id}</p>
-                    </div>
-                  </div>
+
+          {/* Settings Frame */}
+          {showSettings && (
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-8 rounded-2xl w-96 text-center">
+                <h2 className="text-2xl font-bold mb-6">Settings</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-lg">Show Idle Avatar</span>
+                  <button
+                    onClick={() => setShowAvatarIdle(!showAvatarIdle)}
+                    className={`px-4 py-2 rounded-lg font-semibold ${showAvatarIdle ? 'bg-green-500' : 'bg-red-500'}`}
+                  >
+                    {showAvatarIdle ? "ON" : "OFF"}
+                  </button>
+                </div>
+                <button onClick={() => setShowSettings(false)} className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500 transition">Close</button>
+              </div>
+            </div>
+          )}
+
+          {/* Dashboard Content */}
+          <main className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+
+            
+            {/* Profile Card */}
+            <div className="bg-gray-800 p-6 rounded-xl shadow-xl animate-fadeIn">
+              <h2 className="text-xl font-semibold mb-4">Profile</h2>
+              <div className="flex items-center space-x-4">
+                {showAvatarIdle ? (
+                  <img src={user.avatar} alt="Profile" className="w-16 h-16 rounded-full animate-bounce" />
                 ) : (
-                  <p className="text-gray-400">Loading group owner...</p>
+                  <img src={user.avatar} alt="Profile" className="w-16 h-16 rounded-full" />
                 )}
+                <div>
+                  <p className="font-bold text-lg">{user.displayName}</p>
+                  <p className="text-gray-400">@{user.username}</p>
+                  <p className="text-gray-400 text-sm">User ID: {user.id}</p>
+                </div>
+              </div>
+
+              {/* Discovery buttons */}
+              <div className="mt-6 space-y-4">
+                <a href={gamePassLink} target="_blank" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition">Hire Player</a>
+                <a href="/hired-devs" className="block bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-500 transition">Hired Devs Dashboard</a>
               </div>
             </div>
-          </div>
+
+
+            {/* Badges */}
+            <div className="bg-gray-800 p-6 rounded-xl shadow-xl animate-fadeIn">
+              <h2 className="text-xl font-semibold mb-4">Badges</h2>
+              <div className="grid grid-cols-3 gap-4">
+                {badges.map(b => (
+                  <div key={b.id} className="text-center">
+                    <p className="text-sm">{b.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </main>
         </div>
       );
     };
 
-    // Render App
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>

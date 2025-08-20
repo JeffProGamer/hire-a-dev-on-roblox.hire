@@ -4,14 +4,10 @@ const session = require('express-session');
 const passport = require('passport');
 const OAuth2Strategy = require('passport-oauth2').Strategy;
 const axios = require('axios');
-const axiosRetry = require('axios-retry');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
-
-// Retry config for Roblox API
-axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
 // Middleware
 app.use(express.json());
@@ -19,34 +15,36 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'your_secure_session_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 }
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Roblox OAuth2 Strategy
+// Roblox Open Cloud OAuth2 Strategy
 passport.use(new OAuth2Strategy({
-  authorizationURL: 'https://auth.roblox.com/v2/authorize',
-  tokenURL: 'https://auth.roblox.com/v2/token',
+  authorizationURL: 'https://apis.roblox.com/oauth/v1/authorize',
+  tokenURL: 'https://apis.roblox.com/oauth/v1/token',
   clientID: process.env.ROBLOX_CLIENT_ID,
   clientSecret: process.env.ROBLOX_CLIENT_SECRET,
   callbackURL: process.env.CALLBACK_URL || 'http://localhost:3000/api/oauth/callback',
-  scope: ['user.identity']
-}, async (accessToken, refreshToken, profile, done) => {
+  scope: ['openid', 'profile']
+}, async (accessToken, refreshToken, params, profile, done) => {
   try {
-    // Fetch authenticated user info
-    const userResponse = await axios.get('https://users.roblox.com/v1/users/authenticated', {
+    // Fetch user info from Roblox Open Cloud
+    const resp = await axios.get('https://apis.roblox.com/oauth/v1/userinfo', {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
-
-    const userData = userResponse.data;
+    const user = resp.data;
 
     const userProfile = {
-      id: userData.id,
-      username: userData.name,
-      displayName: userData.displayName,
-      avatar: `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userData.id}&size=150x150&format=Png`,
-      accessToken // save token for later API calls (like group info)
+      id: user.sub,
+      username: user.preferred_username,
+      displayName: user.name,
+      avatar: `https://www.roblox.com/headshot-thumbnail/image?userId=${user.sub}&width=150&height=150&format=png`,
+      accessToken
     };
 
     return done(null, userProfile);
@@ -67,10 +65,9 @@ app.get('/api/oauth/callback', passport.authenticate('oauth2', {
   res.redirect('/');
 });
 
-// Fetch logged-in user
+// Current user
 app.get('/api/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not logged in' });
-
   res.json({
     id: req.user.id,
     username: req.user.username,
@@ -79,7 +76,6 @@ app.get('/api/me', (req, res) => {
   });
 });
 
-
 // Logout
 app.get('/api/logout', (req, res) => {
   req.logout(() => {
@@ -87,9 +83,8 @@ app.get('/api/logout', (req, res) => {
   });
 });
 
-// Serve static frontend
+// Serve frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
