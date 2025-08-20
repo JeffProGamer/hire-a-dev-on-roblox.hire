@@ -16,7 +16,7 @@ axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 // Middleware
 app.use(express.json());
 app.use(session({
-  secret: process.env.SESSION_SECRET || '4ce1558bf3d429edf05d8523e2a8438dc30bc66cce66201d4313f007e8a84f72eb3821ec275629bfe54ad7f804135dc34ff298dfdd32a8f1867e6c3bed7facb8',
+  secret: process.env.SESSION_SECRET || 'RBX-NYXHBUe2_UqBzSXR5zd8JwGl2hYlxa3LqgI6vfWquK0wMSSq-oHXMsBiX6Pf1X7t',
   resave: false,
   saveUninitialized: false,
   cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 }
