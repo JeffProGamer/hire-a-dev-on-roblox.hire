@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Roblox Hub</title>
+  <title>Hire Devs on Roblox</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
@@ -12,10 +12,10 @@
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.21.4/babel.min.js"></script>
   <style>
     @keyframes fadeIn { from { opacity:0; transform:translateY(20px);} to { opacity:1; transform:translateY(0);} }
-    .animate-fadeIn { animation: fadeIn 0.5s ease-in-out; }
+    .animate-fadeIn { animation: fadeIn 0.6s ease-in-out; }
   </style>
 </head>
-<body class="bg-gray-900">
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white font-inter">
   <div id="root"></div>
 
   <script type="text/babel">
@@ -31,40 +31,39 @@
       const [loading, setLoading] = useState(true);
 
       useEffect(() => {
-        axios.get('/api/me')
+        axios.get('/api/me', { withCredentials: true })
           .then(res => {
             setUser(res.data);
-            // fetch via our server proxies (avoid CORS)
             return Promise.all([
-              axios.get('/api/friends').then(r => setFriends((r.data.data || []).slice(0, 6))).catch(() => setFriends([])),
-              axios.get('/api/badges').then(r => setBadges(r.data.data || [])).catch(() => setBadges([]))
+              axios.get('/api/friends', { withCredentials: true }).then(r => setFriends((r.data.data || []).slice(0, 6))).catch(() => setFriends([])),
+              axios.get('/api/badges', { withCredentials: true }).then(r => setBadges(r.data.data || [])).catch(() => setBadges([]))
             ]);
           })
-          .catch(() => {})  // not logged in
+          .catch(() => {})
           .finally(() => setLoading(false));
       }, []);
 
       const handleLogout = () => {
-        axios.get('/api/logout').then(() => window.location.href = '/');
+        axios.get('/api/logout', { withCredentials: true }).then(() => window.location.href = '/');
       };
 
       if (loading) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-900">
-            <div className="text-gray-200">Loading...</div>
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-gray-300 text-lg animate-pulse">Loading...</div>
           </div>
         );
       }
 
       if (!user) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-900">
-            <div className="bg-gray-800 p-8 rounded-2xl shadow-xl text-center animate-fadeIn">
-              <h1 className="text-3xl font-bold text-white mb-4">Roblox Hub</h1>
-              <p className="text-gray-300 mb-6">Connect your Roblox account.</p>
+          <div className="min-h-screen flex items-center justify-center px-4">
+            <div className="bg-gray-800 p-10 rounded-2xl shadow-2xl text-center animate-fadeIn max-w-md w-full">
+              <h1 className="text-3xl font-bold text-white mb-4">Hire Devs on Roblox</h1>
+              <p className="text-gray-400 mb-6">Connect your Roblox account to continue.</p>
               <button
                 onClick={() => window.location.href = '/api/oauth/roblox'}
-                className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:scale-105 transition-transform shadow-lg"
+                className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-8 py-3 rounded-full font-semibold hover:scale-105 transition-transform shadow-lg"
               >
                 Connect with Roblox
               </button>
@@ -74,10 +73,10 @@
       }
 
       return (
-        <div className="min-h-screen text-white">
+        <div className="min-h-screen flex flex-col">
           {/* Header */}
-          <header className="flex justify-between items-center p-6 bg-gray-800 shadow-lg">
-            <h1 className="text-2xl font-bold">Roblox Hub</h1>
+          <header className="flex justify-between items-center p-6 bg-gray-900 shadow-lg">
+            <h1 className="text-2xl font-bold">Hire Devs on Roblox</h1>
             <div className="flex items-center space-x-4">
               <button onClick={() => setShowSettings(!showSettings)} className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500 transition">⚙️ Settings</button>
               <img src={user.avatar} alt="avatar" className="w-10 h-10 rounded-full border-2 border-red-500" />
@@ -88,14 +87,18 @@
 
           {/* Quick links */}
           <div className="px-6 mt-6 space-y-4">
-            <a href={gamePassLink} target="_blank" rel="noreferrer" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition">Hire Player</a>
-            <a href={`https://www.roblox.com/users/${user.id}/profile`} target="_blank" rel="noreferrer" className="block bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-500 transition">View Player Profile (Roblox)</a>
+            <a href={gamePassLink} target="_blank" rel="noreferrer" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition shadow">
+              Hire Player
+            </a>
+            <a href={`https://www.roblox.com/users/${user.id}/profile`} target="_blank" rel="noreferrer" className="block bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-500 transition shadow">
+              View Player Profile (Roblox)
+            </a>
           </div>
 
           {/* Settings modal */}
           {showSettings && (
             <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-              <div className="bg-gray-800 p-8 rounded-2xl w-96 text-center">
+              <div className="bg-gray-800 p-8 rounded-2xl w-96 text-center shadow-2xl">
                 <h2 className="text-2xl font-bold mb-6">Settings</h2>
                 <div className="flex justify-between items-center mb-6">
                   <span className="text-lg">Show Idle Avatar</span>
@@ -112,16 +115,12 @@
           )}
 
           {/* Dashboard */}
-          <main className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <main className="flex-1 p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Profile Card */}
             <div className="bg-gray-800 p-6 rounded-xl shadow-xl animate-fadeIn">
               <h2 className="text-xl font-semibold mb-4">Profile</h2>
               <div className="flex items-center space-x-4">
-                {showAvatarIdle ? (
-                  <img src={user.avatar} alt="Profile" className="w-16 h-16 rounded-full animate-bounce" />
-                ) : (
-                  <img src={user.avatar} alt="Profile" className="w-16 h-16 rounded-full" />
-                )}
+                <img src={user.avatar} alt="Profile" className={`w-16 h-16 rounded-full ${showAvatarIdle ? "animate-bounce" : ""}`} />
                 <div>
                   <p className="font-bold text-lg">{user.displayName}</p>
                   <p className="text-gray-400">@{user.username}</p>
@@ -144,8 +143,8 @@
                 {friends.map(f => (
                   <div key={f.id} className="text-center">
                     <img
-                      className="mx-auto w-14 h-14 rounded-full"
-                      src={`https://thumbnails.roblox.com/v1/users/avatar?userIds=${f.id}&size=150x150&format=Png`}
+                      className="mx-auto w-14 h-14 rounded-full shadow"
+                      src={`https://www.roblox.com/headshot-thumbnail/image?userId=${f.id}&width=150&height=150&format=png`}
                       alt={f.name}
                     />
                     <p className="text-sm mt-1 truncate">{f.displayName || f.name}</p>
@@ -160,13 +159,21 @@
               <div className="grid grid-cols-3 gap-4">
                 {badges.length === 0 && <p className="text-gray-400 col-span-3">No badges to show.</p>}
                 {badges.map(b => (
-                  <div key={b.id} className="text-center">
+                  <div key={b.id} className="text-center bg-gray-700 p-2 rounded-lg shadow">
                     <p className="text-sm truncate">{b.name}</p>
                   </div>
                 ))}
               </div>
             </div>
           </main>
+
+          {/* Footer */}
+          <footer className="bg-gray-900 text-gray-500 text-center py-4 text-sm">
+            <p>© {new Date().getFullYear()} Hire Devs on Roblox • 
+              <a href="/terms" className="hover:text-gray-300 mx-2">Terms</a> • 
+              <a href="/privacy" className="hover:text-gray-300 mx-2">Privacy</a>
+            </p>
+          </footer>
         </div>
       );
     };

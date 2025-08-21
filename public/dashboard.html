@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Roblox Dev Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex flex-col">
+
+  <!-- NAVBAR -->
+  <nav class="bg-gray-900 px-6 py-4 flex justify-between items-center shadow">
+    <h1 class="text-xl font-bold">Roblox Dev Hub</h1>
+    <div id="nav-user" class="flex items-center gap-4"></div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="flex-1 container mx-auto px-6 py-10">
+
+    <!-- PROFILE CARD -->
+    <section id="profile" class="bg-gray-900 rounded-xl p-6 shadow flex flex-col items-center mb-8 hidden">
+      <img id="avatar" src="" class="rounded-full w-28 h-28 mb-4" alt="Avatar"/>
+      <h2 id="username" class="text-2xl font-semibold"></h2>
+      <p id="displayName" class="text-gray-400"></p>
+    </section>
+
+    <!-- FRIENDS -->
+    <section id="friends-section" class="mb-10 hidden">
+      <h3 class="text-xl font-bold mb-4">Friends</h3>
+      <div id="friends" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+    </section>
+
+    <!-- BADGES -->
+    <section id="badges-section" class="hidden">
+      <h3 class="text-xl font-bold mb-4">Recent Badges</h3>
+      <div id="badges" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+    </section>
+  </main>
+
+  <script>
+    async function fetchJSON(url) {
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed: " + url);
+      return res.json();
+    }
+
+    async function loadDashboard() {
+      try {
+        // --- Profile ---
+        const me = await fetchJSON("/api/me");
+        document.getElementById("avatar").src = me.avatar;
+        document.getElementById("username").textContent = me.username;
+        document.getElementById("displayName").textContent = me.displayName;
+        document.getElementById("nav-user").innerHTML = `
+          <span class="font-medium">${me.username}</span>
+          <a href="/api/logout" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Logout</a>
+        `;
+        document.getElementById("profile").classList.remove("hidden");
+
+        // --- Friends ---
+        const friendsData = await fetchJSON("/api/friends");
+        const friendsEl = document.getElementById("friends");
+        friendsData.data.forEach(f => {
+          const img = `https://www.roblox.com/headshot-thumbnail/image?userId=${f.id}&width=150&height=150&format=png`;
+          friendsEl.innerHTML += `
+            <div class="bg-gray-800 p-3 rounded-lg text-center">
+              <img src="${img}" class="rounded-full w-20 h-20 mx-auto mb-2"/>
+              <p class="text-sm">${f.name}</p>
+            </div>
+          `;
+        });
+        if (friendsData.data.length) {
+          document.getElementById("friends-section").classList.remove("hidden");
+        }
+
+        // --- Badges ---
+        const badgesData = await fetchJSON("/api/badges");
+        const badgesEl = document.getElementById("badges");
+        badgesData.data.forEach(b => {
+          badgesEl.innerHTML += `
+            <div class="bg-gray-800 p-3 rounded-lg text-center">
+              <img src="${b.iconImageId ? "https://images.rbxcdn.com/" + b.iconImageId : "https://tr.rbxcdn.com/18e1baf0e0fba6c8a27db7ce1dc5d4cc/150/150/Image/Png"}" class="w-16 h-16 mx-auto mb-2"/>
+              <p class="text-xs">${b.name}</p>
+            </div>
+          `;
+        });
+        if (badgesData.data.length) {
+          document.getElementById("badges-section").classList.remove("hidden");
+        }
+
+      } catch (err) {
+        document.body.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-screen">
+            <h1 class="text-2xl font-bold mb-4">Not logged in</h1>
+            <a href="/api/oauth/roblox" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Login with Roblox</a>
+          </div>
+        `;
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
