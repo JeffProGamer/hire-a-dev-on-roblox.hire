@@ -1,4 +1,6 @@
 // server.js
+require('dotenv').config();
+
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
@@ -6,90 +8,143 @@ const OAuth2Strategy = require('passport-oauth2').Strategy;
 const axios = require('axios');
 const axiosRetry = require('axios-retry');
 const path = require('path');
-require('dotenv').config();
 
 const app = express();
 
-// Retry config for Roblox API
+// ---------- Robust axios retry ----------
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
-// Middleware
+// ---------- Middleware ----------
 app.use(express.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'RBX-NYXHBUe2_UqBzSXR5zd8JwGl2hYlxa3LqgI6vfWquK0wMSSq-oHXMsBiX6Pf1X7t',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 }
-}));
+app.use(
+  session({
+    secret:
+      process.env.SESSION_SECRET ||
+      'RBX-NYXHBUe2_UqBzSXR5zd8JwGl2hYlxa3LqgI6vfWquK0wMSSq-oHXMsBiX6Pf1X7t',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      // secure only in prod behind HTTPS
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+);
+
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Roblox OAuth2 Strategy
-passport.use(new OAuth2Strategy({
-  authorizationURL: 'https://auth.roblox.com/v2/authorize',
-  tokenURL: 'https://auth.roblox.com/v2/token',
-  clientID: process.env.ROBLOX_CLIENT_ID,
-  clientSecret: process.env.ROBLOX_CLIENT_SECRET,
-  callbackURL: process.env.CALLBACK_URL || 'http://localhost:3000/api/oauth/callback',
-  scope: ['user.identity']
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    // Fetch authenticated user info
-    const userResponse = await axios.get('https://users.roblox.com/v1/users/authenticated', {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+// ---------- Roblox OAuth2 (Open Cloud) ----------
+// Docs: apis.roblox.com/oauth/v1/{authorize,token}, userinfo endpoint.
+// Use scopes 'openid' and 'profile' for identity. PKCE is supported by Roblox;
+// with server-side apps, standard authorization_code is fine. :contentReference[oaicite:1]{index=1}
+passport.use(
+  'roblox',
+  new OAuth2Strategy(
+    {
+      authorizationURL: 'https://apis.roblox.com/oauth/v1/authorize',
+      tokenURL: 'https://apis.roblox.com/oauth/v1/token',
+      clientID: process.env.ROBLOX_CLIENT_ID,
+      clientSecret: process.env.ROBLOX_CLIENT_SECRET,
+      callbackURL:
+        process.env.CALLBACK_URL || 'http://localhost:3000/api/oauth/callback',
+      scope: ['openid', 'profile'],
+    },
+    async (accessToken, refreshToken, params, done) => {
+      try {
+        // Standard OpenID Connect userinfo
+        // Returns sub (user id), name, display_name, and avatar fields.
+        const ui = await axios.get(
+          'https://apis.roblox.com/oauth/v1/userinfo',
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
 
-    const userData = userResponse.data;
-
-    const userProfile = {
-      id: userData.id,
-      username: userData.name,
-      displayName: userData.displayName,
-      avatar: `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userData.id}&size=150x150&format=Png`,
-      accessToken // save token for later API calls (like group info)
-    };
-
-    return done(null, userProfile);
-  } catch (err) {
-    console.error('Error fetching user profile:', err.message);
-    return done(err);
-  }
-}));
+        const data = ui.data;
+        const user = {
+          id: data.sub, // Roblox user id (string)
+          username: data.name,
+          displayName: data.display_name || data.name,
+          // If userinfo doesn't include avatar URL, fallback to thumbnails API:
+          avatar:
+            data.avatar_thumbnail ||
+            `https://thumbnails.roblox.com/v1/users/avatar?userIds=${data.sub}&size=150x150&format=Png`,
+          accessToken, // keep for server-side calls
+          refreshToken: refreshToken || null,
+        };
+        return done(null, user);
+      } catch (err) {
+        console.error('Error fetching Roblox userinfo:', err.response?.data || err.message);
+        return done(err);
+      }
+    }
+  )
+);
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// OAuth routes
-app.get('/api/oauth/roblox', passport.authenticate('oauth2'));
-app.get('/api/oauth/callback', passport.authenticate('oauth2', {
-  failureRedirect: '/'
-}), (req, res) => {
-  res.redirect('/');
-});
+// ---------- Auth routes ----------
+app.get('/api/oauth/roblox', passport.authenticate('roblox'));
 
-// Fetch logged-in user
+app.get(
+  '/api/oauth/callback',
+  passport.authenticate('roblox', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect('/');
+  }
+);
+
+// ---------- Session helpers ----------
 app.get('/api/me', (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Not logged in' });
+  const { id, username, displayName, avatar } = req.user;
+  res.json({ id, username, displayName, avatar });
+});
 
-  res.json({
-    id: req.user.id,
-    username: req.user.username,
-    displayName: req.user.displayName,
-    avatar: req.user.avatar
+app.get('/api/logout', (req, res, next) => {
+  req.logout(err => {
+    if (err) return next(err);
+    req.session.destroy(() => res.redirect('/'));
   });
 });
 
+// ---------- Proxy routes (avoid CORS in browser) ----------
+function requireAuth(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Not logged in' });
+  next();
+}
 
-// Logout
-app.get('/api/logout', (req, res) => {
-  req.logout(() => {
-    res.redirect('/');
-  });
+// Friends API (public, but CORS blocks from browser). We proxy it.
+app.get('/api/friends', requireAuth, async (req, res) => {
+  try {
+    const r = await axios.get(
+      `https://friends.roblox.com/v1/users/${req.user.id}/friends`
+    );
+    res.json(r.data);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch friends' });
+  }
 });
 
-// Serve static frontend
+// Badges API (public, but CORS blocks from browser). We proxy it.
+app.get('/api/badges', requireAuth, async (req, res) => {
+  try {
+    const r = await axios.get(
+      `https://badges.roblox.com/v1/users/${req.user.id}/badges?limit=6`
+    );
+    res.json(r.data);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch badges' });
+  }
+});
+
+// ---------- Static frontend ----------
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Start server
+// ---------- Start ----------
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});

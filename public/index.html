@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Roblox Hub</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -11,12 +11,13 @@
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.21.4/babel.min.js"></script>
   <style>
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(20px);} to { opacity:1; transform:translateY(0);} }
     .animate-fadeIn { animation: fadeIn 0.5s ease-in-out; }
   </style>
 </head>
 <body class="bg-gray-900">
   <div id="root"></div>
+
   <script type="text/babel">
     const { useState, useEffect } = React;
 
@@ -27,24 +28,33 @@
       const [showSettings, setShowSettings] = useState(false);
       const [showAvatarIdle, setShowAvatarIdle] = useState(true);
       const [gamePassLink, setGamePassLink] = useState("https://www.roblox.com/game-pass/123456789");
+      const [loading, setLoading] = useState(true);
 
       useEffect(() => {
         axios.get('/api/me')
           .then(res => {
             setUser(res.data);
-            axios.get(`https://friends.roblox.com/v1/users/${res.data.id}/friends`)
-              .then(r => setFriends(r.data.data.slice(0, 6)))
-              .catch(() => {});
-            axios.get(`https://badges.roblox.com/v1/users/${res.data.id}/badges?limit=6`)
-              .then(r => setBadges(r.data.data))
-              .catch(() => {});
+            // fetch via our server proxies (avoid CORS)
+            return Promise.all([
+              axios.get('/api/friends').then(r => setFriends((r.data.data || []).slice(0, 6))).catch(() => setFriends([])),
+              axios.get('/api/badges').then(r => setBadges(r.data.data || [])).catch(() => setBadges([]))
+            ]);
           })
-          .catch(() => console.log('Not logged in'));
+          .catch(() => {})  // not logged in
+          .finally(() => setLoading(false));
       }, []);
 
       const handleLogout = () => {
         axios.get('/api/logout').then(() => window.location.href = '/');
       };
+
+      if (loading) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-indigo-900">
+            <div className="text-gray-200">Loading...</div>
+          </div>
+        );
+      }
 
       if (!user) {
         return (
@@ -52,7 +62,10 @@
             <div className="bg-gray-800 p-8 rounded-2xl shadow-xl text-center animate-fadeIn">
               <h1 className="text-3xl font-bold text-white mb-4">Roblox Hub</h1>
               <p className="text-gray-300 mb-6">Connect your Roblox account.</p>
-              <button onClick={() => window.location.href = '/api/oauth/roblox'} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:scale-105 transition-transform shadow-lg">
+              <button
+                onClick={() => window.location.href = '/api/oauth/roblox'}
+                className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:scale-105 transition-transform shadow-lg"
+              >
                 Connect with Roblox
               </button>
             </div>
@@ -67,20 +80,19 @@
             <h1 className="text-2xl font-bold">Roblox Hub</h1>
             <div className="flex items-center space-x-4">
               <button onClick={() => setShowSettings(!showSettings)} className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500 transition">⚙️ Settings</button>
-              <img src={user.avatar} className="w-10 h-10 rounded-full border-2 border-red-500" />
+              <img src={user.avatar} alt="avatar" className="w-10 h-10 rounded-full border-2 border-red-500" />
               <span className="font-semibold">{user.displayName}</span>
               <button onClick={handleLogout} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-semibold hover:scale-105 transition-transform">Logout</button>
             </div>
           </header>
 
-          {/* Discovery buttons */}
-<div className="mt-6 space-y-4">
-  <a href={gamePassLink} target="_blank" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition">Hire Player</a>
-  <a href={`https://www.roblox.com/users/${user.id}/profile`} target="_blank" className="block bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-500 transition">View Player Profile (Roblox)</a>
-</div>
+          {/* Quick links */}
+          <div className="px-6 mt-6 space-y-4">
+            <a href={gamePassLink} target="_blank" rel="noreferrer" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition">Hire Player</a>
+            <a href={`https://www.roblox.com/users/${user.id}/profile`} target="_blank" rel="noreferrer" className="block bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-500 transition">View Player Profile (Roblox)</a>
+          </div>
 
-
-          {/* Settings Frame */}
+          {/* Settings modal */}
           {showSettings && (
             <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
               <div className="bg-gray-800 p-8 rounded-2xl w-96 text-center">
@@ -99,11 +111,8 @@
             </div>
           )}
 
-          {/* Dashboard Content */}
+          {/* Dashboard */}
           <main className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-
-            
             {/* Profile Card */}
             <div className="bg-gray-800 p-6 rounded-xl shadow-xl animate-fadeIn">
               <h2 className="text-xl font-semibold mb-4">Profile</h2>
@@ -120,26 +129,43 @@
                 </div>
               </div>
 
-              {/* Discovery buttons */}
+              {/* Quick actions */}
               <div className="mt-6 space-y-4">
-                <a href={gamePassLink} target="_blank" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition">Hire Player</a>
+                <a href={gamePassLink} target="_blank" rel="noreferrer" className="block bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition">Hire Player</a>
                 <a href="/hired-devs" className="block bg-purple-600 px-4 py-2 rounded-lg hover:bg-purple-500 transition">Hired Devs Dashboard</a>
               </div>
             </div>
 
-
-            {/* Badges */}
+            {/* Friends */}
             <div className="bg-gray-800 p-6 rounded-xl shadow-xl animate-fadeIn">
-              <h2 className="text-xl font-semibold mb-4">Badges</h2>
+              <h2 className="text-xl font-semibold mb-4">Friends</h2>
               <div className="grid grid-cols-3 gap-4">
-                {badges.map(b => (
-                  <div key={b.id} className="text-center">
-                    <p className="text-sm">{b.name}</p>
+                {friends.length === 0 && <p className="text-gray-400 col-span-3">No friends to show.</p>}
+                {friends.map(f => (
+                  <div key={f.id} className="text-center">
+                    <img
+                      className="mx-auto w-14 h-14 rounded-full"
+                      src={`https://thumbnails.roblox.com/v1/users/avatar?userIds=${f.id}&size=150x150&format=Png`}
+                      alt={f.name}
+                    />
+                    <p className="text-sm mt-1 truncate">{f.displayName || f.name}</p>
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Badges */}
+            <div className="bg-gray-800 p-6 rounded-xl shadow-xl animate-fadeIn">
+              <h2 className="text-xl font-semibold mb-4">Badges</h2>
+              <div className="grid grid-cols-3 gap-4">
+                {badges.length === 0 && <p className="text-gray-400 col-span-3">No badges to show.</p>}
+                {badges.map(b => (
+                  <div key={b.id} className="text-center">
+                    <p className="text-sm truncate">{b.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </main>
         </div>
       );
