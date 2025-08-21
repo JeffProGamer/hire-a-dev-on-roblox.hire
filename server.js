@@ -13,9 +13,9 @@ const PORT = 3000;
 // PASSPORT CONFIG
 // =======================
 passport.use(new RobloxStrategy({
-  clientID: "YOUR_CLIENT_ID",
-  clientSecret: "YOUR_CLIENT_SECRET",
-  callbackURL: "http://localhost:3000/api/oauth/callback",
+  clientID: "2755329002164484381",
+  clientSecret: "RBX-UW6FJl5VNUi4DKLmyzx11oHJ20HUd3cu9H60ryHY7nbKAlXdApBOmynnU0OACZBJ",
+  callbackURL: "https://hire-a-dev-on-roblox-hire.onrender.com/api/oauth/callback",
   scope: "openid profile"
 }, (accessToken, refreshToken, profile, done) => {
   // Save the Roblox profile in session
@@ -34,7 +34,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
 // MIDDLEWARE
 // =======================
 app.use(session({
-  secret: "super-secret-key",
+  secret: "110e11cf86e8f879038baa3f33f684824a10c03d0fb749c76a94e73cfdc855c9dea4440f5c85831df12d4df6923cbde79fca3f71da4870b05a98d791f0a35731",
   resave: false,
   saveUninitialized: false
 }));
