@@ -147,5 +147,5 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ---------- Start ----------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on https://hire-a-dev-on-roblox-hire.onrender.com`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
