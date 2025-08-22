@@ -12,9 +12,9 @@ const PORT = process.env.PORT || 3000;
 // -----------------------------
 // Required ENV on Render:
 // -----------------------------
-// SESSION_SECRET=some-long-random-string
-// ROBLOX_CLIENT_ID=your-client-id
-// ROBLOX_CLIENT_SECRET=your-client-secret
+// SESSION_SECRET=110e11cf86e8f879038baa3f33f684824a10c03d0fb749c76a94e73cfdc855c9dea4440f5c85831df12d4df6923cbde79fca3f71da4870b05a98d791f0a35731
+// ROBLOX_CLIENT_ID=2755329002164484381
+// ROBLOX_CLIENT_SECRET=RBX-UW6FJl5VNUi4DKLmyzx11oHJ20HUd3cu9H60ryHY7nbKAlXdApBOmynnU0OACZBJ
 // ROBLOX_CALLBACK_URL=https://hire-a-dev-on-roblox-hire.onrender.com/api/oauth/callback
 //
 // Roblox uses standard OIDC/OAuth2.0. Docs + discovery:
@@ -28,14 +28,14 @@ app.set("trust proxy", 1);
 app.use(
   session({
     name: "sid",
-    secret: process.env.SESSION_SECRET || "dev-only-secret",
+    secret: process.env.SESSION_SECRET || "110e11cf86e8f879038baa3f33f684824a10c03d0fb749c76a94e73cfdc855c9dea4440f5c85831df12d4df6923cbde79fca3f71da4870b05a98d791f0a35731",
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days clientID: "2755329002164484381",
     },
   })
 );
