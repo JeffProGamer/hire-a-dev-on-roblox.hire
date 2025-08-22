@@ -7,18 +7,17 @@ const fetch = require("node-fetch");
 const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // =======================
-// PASSPORT CONFIG
+// Passport config
 // =======================
 passport.use(new RobloxStrategy({
-  clientID: "2755329002164484381",
-  clientSecret: "RBX-UW6FJl5VNUi4DKLmyzx11oHJ20HUd3cu9H60ryHY7nbKAlXdApBOmynnU0OACZBJ",
-  callbackURL: "https://hire-a-dev-on-roblox-hire.onrender.com/api/oauth/callback",
+  clientID: process.env.ROBLOX_CLIENT_ID,
+  clientSecret: process.env.ROBLOX_CLIENT_SECRET,
+  callbackURL: process.env.ROBLOX_CALLBACK_URL,
   scope: "openid profile"
 }, (accessToken, refreshToken, profile, done) => {
-  // Save the Roblox profile in session
   return done(null, {
     id: profile.id,
     username: profile.username,
@@ -31,18 +30,23 @@ passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
 // =======================
-// MIDDLEWARE
+// Middleware
 // =======================
 app.use(session({
-  secret: "110e11cf86e8f879038baa3f33f684824a10c03d0fb749c76a94e73cfdc855c9dea4440f5c85831df12d4df6923cbde79fca3f71da4870b05a98d791f0a35731",
+  secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(express.static(path.join(__dirname, "public")));
 
 // =======================
-// AUTH GUARD
+// Auth guard
 // =======================
 function requireAuth(req, res, next) {
   if (req.isAuthenticated()) return next();
@@ -50,59 +54,36 @@ function requireAuth(req, res, next) {
 }
 
 // =======================
-// ROUTES
+// Routes
 // =======================
-
-// --- Login page ---
 app.get("/", (req, res) => {
-  if (req.isAuthenticated()) return res.redirect("/dashboard");
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Login</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-gray-950 flex items-center justify-center h-screen text-white">
-      <div class="text-center">
-        <h1 class="text-3xl font-bold mb-6">Hire Devs On Roblox</h1>
-        <a href="/api/oauth/roblox" 
-           class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
-          Login with Roblox
-        </a>
-      </div>
-    </body>
-    </html>
-  `);
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// --- Dashboard ---
-app.get("/dashboard", requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "dashboard.html"));
-});
+// Terms & Privacy
+app.get("/terms.html", (req, res) => res.sendFile(path.join(__dirname, "public", "terms.html")));
+app.get("/privacy.html", (req, res) => res.sendFile(path.join(__dirname, "public", "privacy.html")));
 
-// --- OAuth ---
+// =======================
+// OAuth
+// =======================
 app.get("/api/oauth/roblox", passport.authenticate("roblox"));
+
 app.get("/api/oauth/callback",
   passport.authenticate("roblox", { failureRedirect: "/" }),
-  (req, res) => res.redirect("/dashboard")
+  (req, res) => res.redirect("/") // redirect to React dashboard
 );
 
-// --- Logout ---
+// Logout
 app.get("/api/logout", (req, res) => {
   req.logout(() => res.redirect("/"));
 });
 
 // =======================
-// API ROUTES
+// API routes
 // =======================
+app.get("/api/me", requireAuth, (req, res) => res.json(req.user));
 
-// Current user
-app.get("/api/me", requireAuth, (req, res) => {
-  res.json(req.user);
-});
-
-// Friends
 app.get("/api/friends", requireAuth, async (req, res) => {
   try {
     const response = await fetch(`https://friends.roblox.com/v1/users/${req.user.id}/friends`);
@@ -113,7 +94,6 @@ app.get("/api/friends", requireAuth, async (req, res) => {
   }
 });
 
-// Badges
 app.get("/api/badges", requireAuth, async (req, res) => {
   try {
     const response = await fetch(`https://badges.roblox.com/v1/users/${req.user.id}/badges?limit=10&sortOrder=Desc`);
@@ -125,6 +105,6 @@ app.get("/api/badges", requireAuth, async (req, res) => {
 });
 
 // =======================
-// START
+// Start server
 // =======================
-app.listen(PORT, () => console.log(`✅ Server running: http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
