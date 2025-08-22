@@ -33,16 +33,14 @@ passport.deserializeUser((obj, done) => done(null, obj));
 // Middleware
 // =======================
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || "default_secret_key",
   resave: false,
-  saveUninitialized: false,
-  cookie: {
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production"
-  }
+  saveUninitialized: false
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Serve static files (index.html, dashboard.html, etc.)
 app.use(express.static(path.join(__dirname, "public")));
 
 // =======================
@@ -50,33 +48,47 @@ app.use(express.static(path.join(__dirname, "public")));
 // =======================
 function requireAuth(req, res, next) {
   if (req.isAuthenticated()) return next();
-  res.redirect("/");
+  res.redirect("/index.html");
 }
 
 // =======================
 // Routes
 // =======================
 app.get("/", (req, res) => {
+  if (req.isAuthenticated()) return res.redirect("/dashboard.html");
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Terms & Privacy
-app.get("/terms.html", (req, res) => res.sendFile(path.join(__dirname, "public", "terms.html")));
-app.get("/privacy.html", (req, res) => res.sendFile(path.join(__dirname, "public", "privacy.html")));
+app.get("/dashboard.html", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
+});
+
+app.get("/terms.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "terms.html"));
+});
+
+app.get("/privacy.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "privacy.html"));
+});
 
 // =======================
-// OAuth
+// OAuth routes
 // =======================
 app.get("/api/oauth/roblox", passport.authenticate("roblox"));
 
 app.get("/api/oauth/callback",
-  passport.authenticate("roblox", { failureRedirect: "/" }),
-  (req, res) => res.redirect("/") // redirect to React dashboard
+  passport.authenticate("roblox", { failureRedirect: "/index.html" }),
+  (req, res) => {
+    // Successful login -> dashboard
+    res.redirect("/dashboard.html");
+  }
 );
 
-// Logout
-app.get("/api/logout", (req, res) => {
-  req.logout(() => res.redirect("/"));
+app.get("/api/logout", (req, res, next) => {
+  req.logout(err => {
+    if (err) return next(err);
+    res.redirect("/index.html");
+  });
 });
 
 // =======================
@@ -87,8 +99,7 @@ app.get("/api/me", requireAuth, (req, res) => res.json(req.user));
 app.get("/api/friends", requireAuth, async (req, res) => {
   try {
     const response = await fetch(`https://friends.roblox.com/v1/users/${req.user.id}/friends`);
-    const data = await response.json();
-    res.json(data);
+    res.json(await response.json());
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch friends" });
   }
@@ -97,8 +108,7 @@ app.get("/api/friends", requireAuth, async (req, res) => {
 app.get("/api/badges", requireAuth, async (req, res) => {
   try {
     const response = await fetch(`https://badges.roblox.com/v1/users/${req.user.id}/badges?limit=10&sortOrder=Desc`);
-    const data = await response.json();
-    res.json(data);
+    res.json(await response.json());
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch badges" });
   }
